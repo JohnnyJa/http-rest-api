@@ -23,6 +23,26 @@ func TestApiClient_GetPrice(t *testing.T){
 	go cl.GetPrice(url, ch)
 
 	res = <-ch
-	log.Println(res.Price)
+	assert.EqualValues(t, 0, res.Price)
 	assert.Error(t, res.Error)
+
+	urls := []string{
+		"http://inv-nets.admixer.net/test-dsp/dsp?responseType=1&profile=1",
+	 "http://inv-nets.admixer.net/test-dsp/dsp?responseType=1&profile=2",
+	 "http://inv-nets.admixer.net/test-dsp/dsp?responseType=1&profile=3",
+	 "http://inv-nets.admixer.net/test-dsp/dsp?responseType=1&profile=4",
+	}
+
+	for _, url := range urls {
+		go cl.GetPrice(url, ch)
+	}
+
+	prices := make([]float64, 0)
+
+	for i := 0; i < len(urls); i++ {
+		res = <-ch
+		prices = append(prices, res.Price)
+	}
+
+	log.Println(prices)
 }

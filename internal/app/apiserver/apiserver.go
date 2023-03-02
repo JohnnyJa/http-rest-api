@@ -2,7 +2,6 @@ package apiserver
 
 import (
 	"encoding/json"
-	"fmt"
 	"net/http"
 	"strconv"
 	"strings"
@@ -113,7 +112,6 @@ func (s *APIServer) handleGetMaxPost() http.HandlerFunc {
 		}
 
 		s.respond(w, r, 200, map[string]float64{"MaxPrice": max})
-		fmt.Println(max)
 	}
 
 }
@@ -139,7 +137,7 @@ func (s *APIServer) handleGetMaxGet() http.HandlerFunc {
 		
 		max, err := s.GetMaxSize(req.Url_package)
 
-		if err !=nil {
+		if err != nil {
 			s.error(w, r, 204, err)
 		}
 
@@ -173,9 +171,7 @@ func (s *APIServer) respond(w http.ResponseWriter, r *http.Request, code int, da
 }
 
 func (s *APIServer) GetMaxSize(ids []int) (float64, error){
-	maxPrice := 0.0
-	ch := make(chan apiclient.PriceResult)
-	
+	ch := make(chan apiclient.PriceResult, len(ids))
 
 	for _, id := range ids {
 		url, err := s.store.UrlPackage().FindById(id)
@@ -185,16 +181,28 @@ func (s *APIServer) GetMaxSize(ids []int) (float64, error){
 		go s.APIclient.GetPrice(url.UrlString, ch)
 	}
 
+	prices := make([]float64, 0)
+
 	for i := 0; i < len(ids); i++ {
 		res := <-ch
-		
-		if res.Error !=nil {
-			return 0, res.Error
+
+		//Потрібно повернути price = 0 при відсутньому значенні
+		if res.Error != nil {
+			prices = append(prices, 0)
+			continue
 		}
 		
-		if res.Price > maxPrice{
-			maxPrice = res.Price
+		prices = append(prices, res.Price)
+	}
+	
+
+	maxPrice := 0.0
+
+	for _, price := range prices {
+		if price > maxPrice{
+			maxPrice = price
 		}
 	}
+	
 	return maxPrice, nil
 }

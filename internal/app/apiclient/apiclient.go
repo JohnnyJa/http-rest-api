@@ -36,6 +36,7 @@ func (c *APIClient)GetPrice(url string, ch chan PriceResult){
 	r, err := c.client.Get(url)
 	if err != nil {
 		ch <- PriceResult{0, err}
+		
 	}
 	defer r.Body.Close()
 
@@ -46,10 +47,12 @@ func (c *APIClient)GetPrice(url string, ch chan PriceResult){
 	resp := &response{}
 	if err := json.NewDecoder(r.Body).Decode(resp); err != nil {
 		ch <- PriceResult{0, err}
+		return
 	}
 
 	if err:=validate.Struct(resp); err != nil {
-		ch <-PriceResult{0, nil} //Формат валідації завдання
+		ch <-PriceResult{0, err} 
+		return
 	}
 
 	ch <- PriceResult{resp.Price,  nil}
